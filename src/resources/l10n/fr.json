@@ -21,7 +21,7 @@
     "sharedNmi": "nmi",
     "sharedMeters": "m",
     "sharedFeet": "ft",
-    "sharedKn": "nd",
+    "sharedKn": "nddddddd",
     "sharedKmh": "km/h",
     "sharedMph": "mph",
     "sharedHour": "Heure",
