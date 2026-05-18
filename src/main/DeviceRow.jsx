@@ -15,6 +15,17 @@ import Battery60Icon from '@mui/icons-material/Battery60';
 import BatteryCharging60Icon from '@mui/icons-material/BatteryCharging60';
 import Battery20Icon from '@mui/icons-material/Battery20';
 import BatteryCharging20Icon from '@mui/icons-material/BatteryCharging20';
+
+// --------- PMR addons -------------
+import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
+import SignalCellularOffIcon from '@mui/icons-material/SignalCellularOff';
+import SignalCellular0BarIcon from '@mui/icons-material/SignalCellular0Bar';
+import SignalCellular1BarIcon from '@mui/icons-material/SignalCellular1Bar';
+import SignalCellular2BarIcon from '@mui/icons-material/SignalCellular2Bar';
+import SignalCellular3BarIcon from '@mui/icons-material/SignalCellular3Bar';
+import SignalCellular4BarIcon from '@mui/icons-material/SignalCellular4Bar';
+// ----------------------------------
+
 import ErrorIcon from '@mui/icons-material/Error';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -22,6 +33,7 @@ import { devicesActions } from '../store';
 import {
   formatAlarm,
   formatBoolean,
+  formatNumber,
   formatPercentage,
   formatStatus,
   getStatusColor,
@@ -30,6 +42,7 @@ import { useTranslation } from '../common/components/LocalizationProvider';
 import { mapIconKey, mapIcons } from '../map/core/preloadImages';
 import { useAdministrator } from '../common/util/permissions';
 import EngineIcon from '../resources/images/data/engine.svg?react';
+import SatelliteIcon from '../resources/images/data/satellite.svg?react';
 import { useAttributePreference } from '../common/util/preferences';
 import GeofencesValue from '../common/components/GeofencesValue';
 import DriverValue from '../common/components/DriverValue';
@@ -162,6 +175,42 @@ const DeviceRow = ({ devices, index, style }) => {
                   ) : (
                     <EngineIcon width={20} height={20} className={classes.neutral} />
                   )}
+                </IconButton>
+              </Tooltip>
+            )}
+            {position.attributes.hasOwnProperty('sat') && (
+              <Tooltip
+                title={`${t('positionSat')}: ${formatNumber(position.attributes.sat, 0)}`}
+              >
+                <IconButton size="small">
+                  {position.attributes.sat > 6 ? (
+                    <SatelliteAltIcon fontSize="small" className={classes.success} />
+                  ) : (position.attributes.sat > 3 ? (
+                    <SatelliteAltIcon fontSize="small" className={classes.warning} />
+                  ) : (
+                    <SatelliteAltIcon fontSize="small" className={classes.error} />
+                  ))}
+                </IconButton>
+              </Tooltip>
+            )}
+            {position.attributes.hasOwnProperty('rssi') && (
+              <Tooltip
+                title={`${t('positionRssi')}: ${formatNumber(position.attributes.rssi, 0)}/5`}
+              >
+                <IconButton size="small">
+                  {position.attributes.rssi === 5 ? (
+                    <SignalCellular4BarIcon fontSize="small" className={classes.success} />
+                  ) : (position.attributes.rssi === 4 ? (
+                    <SignalCellular3BarIcon fontSize="small" className={classes.success} />
+                  ) : (position.attributes.rssi === 3 ? (
+                    <SignalCellular2BarIcon fontSize="small" className={classes.success} />
+                  ) : (position.attributes.rssi === 2 ? (
+                    <SignalCellular1BarIcon fontSize="small" className={classes.success} />
+                  ) : (position.attributes.rssi === 1 ? (
+                    <SignalCellular0BarIcon fontSize="small" className={classes.warning} />
+                  ) : (
+                    <SignalCellularOffIcon fontSize="small" className={classes.error} />
+                  )))))}
                 </IconButton>
               </Tooltip>
             )}
