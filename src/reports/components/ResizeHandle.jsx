@@ -19,6 +19,7 @@ const ResizeHandle = () => {
     const onMove = (moveEvent) => {
       const offset = moveEvent.clientY - containerRectangle.top;
       const percentage = Math.max(10, Math.min(90, (offset / containerRectangle.height) * 100));
+      console.log('Setting map height to', percentage, '%');
       document.documentElement.style.setProperty('--report-map-height', `${percentage}%`);
     };
     const onUp = () => {

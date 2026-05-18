@@ -64,4 +64,10 @@ export default makeStyles()((theme) => ({
       display: 'none',
     },
   },
+  row: {
+    transition: 'background-color 0.3s ease',
+    '&:hover': {
+      backgroundColor: theme.palette.grey[100],
+    },
+  },
 }));
