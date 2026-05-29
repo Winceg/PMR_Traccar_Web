@@ -76,6 +76,8 @@
     "sharedFile": "File",
     "sharedSearchDevices": "Search Devices",
     "sharedSortBy": "Sort By",
+    "sharedSortAscending": "Oldest first",
+    "sharedSortDescending": "Latest first",
     "sharedFilterMap": "Filter on Map",
     "sharedSelectFile": "Select File",
     "sharedPhone": "Phone",

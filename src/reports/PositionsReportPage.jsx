@@ -1,8 +1,11 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { IconButton, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { useDispatch, useSelector } from 'react-redux';
+import { IconButton, Table, TableBody, TableCell, TableHead, TableRow, Tooltip } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ReportFilter, { updateReportParams } from './components/ReportFilter';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import PageLayout from '../common/components/PageLayout';
@@ -26,9 +29,13 @@ import { useRestriction } from '../common/util/permissions';
 import CollectionActions from '../settings/components/CollectionActions';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 import SelectField from '../common/components/SelectField';
+import { sessionActions } from '../store';
+
+const DEFAULT_COLUMNS = ['fixTime', 'latitude', 'longitude', 'speed', 'address'];
 
 const PositionsReportPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { classes } = useReportStyles();
   const t = useTranslation();
 
@@ -37,15 +44,37 @@ const PositionsReportPage = () => {
   const positionAttributes = usePositionAttributes(t);
 
   const readonly = useRestriction('readonly');
+  const user = useSelector((state) => state.session.user);
 
   const [available, setAvailable] = useState([]);
-  const [columns, setColumns] = useState(['fixTime', 'latitude', 'longitude', 'speed', 'address']);
+  const [columns, setColumns] = useState(DEFAULT_COLUMNS);
   const [items, setItems] = useState([]);
+  const [reversed, setReversed] = useState(true);
   const geofenceId = searchParams.has('geofenceId')
     ? parseInt(searchParams.get('geofenceId'))
     : null;
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+
+  const saveColumns = useCallback(async (deviceId, newColumns) => {
+    const key = `positionReportColumns_${deviceId}`;
+    const updatedAttributes = { ...user.attributes, [key]: newColumns.join(',') };
+    const response = await fetchOrThrow(`/api/users/${user.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...user, attributes: updatedAttributes }),
+    });
+    dispatch(sessionActions.updateUser(await response.json()));
+  }, [user, dispatch]);
+
+  const [currentDeviceId, setCurrentDeviceId] = useState(null);
+
+  const handleSetColumns = useCallback((newColumns) => {
+    setColumns(newColumns);
+    if (currentDeviceId) {
+      saveColumns(currentDeviceId, newColumns).catch(() => {});
+    }
+  }, [currentDeviceId, saveColumns]);
 
   const selectedRef = useRef();
 
@@ -94,11 +123,17 @@ const PositionsReportPage = () => {
           [...keyList, ...keySet].map((key) => [key, positionAttributes[key]?.name || key]),
         );
         setItems(data);
+
+        const deviceId = deviceIds[0];
+        setCurrentDeviceId(deviceId);
+        const saved = user.attributes[`positionReportColumns_${deviceId}`]
+          || user.attributes.positionReportColumns;
+        setColumns(saved ? saved.split(',') : DEFAULT_COLUMNS);
       } finally {
         setLoading(false);
       }
     },
-    [geofenceId, positionAttributes],
+    [geofenceId, positionAttributes, user.attributes],
   );
 
   const onExport = useCatch(async ({ deviceIds, from, to, format }) => {
@@ -165,7 +200,7 @@ const PositionsReportPage = () => {
               </div>
               <ColumnSelect
                 columns={columns}
-                setColumns={setColumns}
+                setColumns={handleSetColumns}
                 columnsArray={available}
                 rawValues
                 disabled={!items.length}
@@ -177,14 +212,23 @@ const PositionsReportPage = () => {
               <TableRow>
                 <TableCell className={classes.columnAction} />
                 {columns.map((key) => (
-                  <TableCell key={key}>{positionAttributes[key]?.name || key}</TableCell>
+                  <TableCell key={key}>
+                    {positionAttributes[key]?.name || key}
+                    {key === 'fixTime' && (
+                      <Tooltip title={reversed ? t('sharedSortAscending') : t('sharedSortDescending')}>
+                        <IconButton size="small" onClick={() => setReversed((r) => !r)}>
+                          {reversed ? <ArrowDownwardIcon fontSize="small" /> : <ArrowUpwardIcon fontSize="small" />}
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </TableCell>
                 ))}
                 <TableCell className={classes.columnAction} />
               </TableRow>
             </TableHead>
             <TableBody>
               {!loading ? (
-                items.slice(0, 4000).map((item) => (
+                (reversed ? [...items].reverse() : items).slice(0, 4000).map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className={classes.columnAction} padding="none">
                       {selectedItem === item ? (

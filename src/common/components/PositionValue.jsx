@@ -34,6 +34,7 @@ const PositionValue = ({ position, property, attribute }) => {
   const positionAttributes = usePositionAttributes(t);
 
   const device = useSelector((state) => state.devices.items[position.deviceId]);
+  const serverAttributes = useSelector((state) => state.session.server.attributes);
 
   const key = property || attribute;
   const value = property ? position[property] : position.attributes[attribute];
@@ -80,14 +81,16 @@ const PositionValue = ({ position, property, attribute }) => {
             return formatVolume(value, volumeUnit, t);
           case 'hours':
             return formatNumericHours(value, t);
-          default:
+          default: {
             if (typeof value === 'number') {
-              return formatNumber(value);
+              const sensorUnit = serverAttributes[`sensorUnit.${key}`];
+              return sensorUnit ? `${formatNumber(value)} ${sensorUnit}` : formatNumber(value);
             }
             if (typeof value === 'boolean') {
               return formatBoolean(value, t);
             }
             return value || '';
+          }
         }
     }
   };

@@ -76,6 +76,8 @@
     "sharedFile": "Fichier",
     "sharedSearchDevices": "Recherche appareils",
     "sharedSortBy": "Trier par",
+    "sharedSortAscending": "Plus ancien en premier",
+    "sharedSortDescending": "Plus récent en premier",
     "sharedFilterMap": "Filtrer sur la carte",
     "sharedSelectFile": "Sélectionner un fichier",
     "sharedPhone": "Téléphone",
