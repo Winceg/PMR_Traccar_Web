@@ -1,9 +1,9 @@
-import { useId, useCallback, useEffect, useRef } from 'react';
+import { useId, useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { map } from './core/MapView';
-import { formatTime, getStatusColor } from '../common/util/formatter';
+import { formatTime, formatNumber, getStatusColor } from '../common/util/formatter';
 import { mapIconKey } from './core/preloadImages';
 import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
@@ -28,9 +28,12 @@ const MapPositions = ({
 
   const devices = useSelector((state) => state.devices.items);
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
+  const serverAttributes = useSelector((state) => state.session.server.attributes);
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
+
+  const [blink, setBlink] = useState(false);
 
   const disabledRef = useRef(disabled);
   disabledRef.current = disabled;
@@ -50,6 +53,14 @@ const MapPositions = ({
           showDirection = selectedPositionId === position.id && position.course > 0;
           break;
       }
+      const sensorLines = Object.entries(position.attributes)
+        .filter(([key]) => serverAttributes[`sensorUnit.${key}`] !== undefined)
+        .map(([key, value]) => `${formatNumber(value)} ${serverAttributes[`sensorUnit.${key}`]}`);
+      const sensorAlert = Object.entries(position.attributes).some(([key, value]) => {
+        const min = device.attributes[`sensorMin.${key}`];
+        const max = device.attributes[`sensorMax.${key}`];
+        return (min !== undefined && value < Number(min)) || (max !== undefined && value > Number(max));
+      });
       return {
         id: position.id,
         deviceId: position.deviceId,
@@ -59,10 +70,28 @@ const MapPositions = ({
         color: showStatus ? position.attributes.color || getStatusColor(device.status) : 'neutral',
         rotation: position.course,
         direction: showDirection,
+        sensorLabel: sensorLines.join('\n'),
+        sensorColor: sensorAlert ? (blink ? '#ff0000' : '#ff000033') : '#444444',
       };
     },
-    [directionType, showStatus],
+    [directionType, showStatus, serverAttributes, blink],
   );
+
+  const hasAlerts = positions.some((position) => {
+    const device = devices[position.deviceId];
+    if (!device) return false;
+    return Object.entries(position.attributes).some(([key, value]) => {
+      const min = device.attributes[`sensorMin.${key}`];
+      const max = device.attributes[`sensorMax.${key}`];
+      return (min !== undefined && value < Number(min)) || (max !== undefined && value > Number(max));
+    });
+  });
+
+  useEffect(() => {
+    if (!hasAlerts) return;
+    const interval = setInterval(() => setBlink((b) => !b), 600);
+    return () => clearInterval(interval);
+  }, [hasAlerts]);
 
   const onMouseEnter = () => (map.getCanvas().style.cursor = 'pointer');
   const onMouseLeave = () => (map.getCanvas().style.cursor = '');
@@ -159,6 +188,25 @@ const MapPositions = ({
           'icon-rotation-alignment': 'map',
         },
       });
+      map.addLayer({
+        id: `sensor-${source}`,
+        type: 'symbol',
+        source,
+        filter: ['all', ['!has', 'point_count'], ['!=', 'sensorLabel', '']],
+        layout: {
+          'text-field': '{sensorLabel}',
+          'text-allow-overlap': true,
+          'text-anchor': 'top',
+          'text-offset': [0, 2 * iconScale],
+          'text-font': findFonts(map),
+          'text-size': 13,
+        },
+        paint: {
+          'text-color': ['get', 'sensorColor'],
+          'text-halo-color': 'white',
+          'text-halo-width': 1,
+        },
+      });
 
       map.on('mouseenter', source, onMouseEnter);
       map.on('mouseleave', source, onMouseLeave);
@@ -203,6 +251,9 @@ const MapPositions = ({
         }
         if (map.getLayer(`direction-${source}`)) {
           map.removeLayer(`direction-${source}`);
+        }
+        if (map.getLayer(`sensor-${source}`)) {
+          map.removeLayer(`sensor-${source}`);
         }
         if (map.getSource(source)) {
           map.removeSource(source);
