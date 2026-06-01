@@ -1,6 +1,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import maplibregl from 'maplibre-gl';
 import { googleProtocol } from 'maplibre-google-maps';
+import { Protocol } from 'pmtiles';
 import { useRef, useLayoutEffect, useEffect, useState, useMemo } from 'react';
 import { useTheme } from '@mui/material';
 import MapSwitcher from '../control/MapSwitcher';
@@ -16,6 +17,7 @@ element.style.height = '100%';
 element.style.boxSizing = 'initial';
 
 maplibregl.addProtocol('google', googleProtocol);
+maplibregl.addProtocol('pmtiles', new Protocol().tile);
 
 export const map = new maplibregl.Map({
   container: element,

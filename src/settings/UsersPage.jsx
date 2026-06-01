@@ -24,6 +24,7 @@ import { useManager } from '../common/util/permissions';
 import SearchHeader from './components/SearchHeader';
 import useSettingsStyles from './common/useSettingsStyles';
 import fetchOrThrow from '../common/util/fetchOrThrow';
+import UserDevicesValue from './components/UserDevicesValue';
 
 const UsersPage = () => {
   const { classes } = useSettingsStyles();
@@ -35,7 +36,6 @@ const UsersPage = () => {
   const [reloadKey, reload] = useReducer((k) => k + 1, 0);
   const [items, setItems] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [temporary, setTemporary] = useState(false);
 
@@ -60,19 +60,14 @@ const UsersPage = () => {
 
   const loadItems = useCallback(
     async (offset, signal) => {
-      setLoading(true);
-      try {
-        const query = new URLSearchParams({ excludeAttributes: true, limit: pageSize, offset });
-        if (searchKeyword) {
-          query.append('keyword', searchKeyword);
-        }
-        const response = await fetchOrThrow(`/api/users?${query.toString()}`, { signal });
-        const data = await response.json();
-        setItems((previous) => (offset ? [...previous, ...data] : data));
-        setHasMore(data.length >= pageSize);
-      } finally {
-        setLoading(false);
+      const query = new URLSearchParams({ excludeAttributes: true, limit: pageSize, offset });
+      if (searchKeyword) {
+        query.append('keyword', searchKeyword);
       }
+      const response = await fetchOrThrow(`/api/users?${query.toString()}`, { signal });
+      const data = await response.json();
+      setItems((previous) => (offset ? [...previous, ...data] : data));
+      setHasMore(data.length >= pageSize);
     },
     [searchKeyword],
   );
@@ -99,6 +94,7 @@ const UsersPage = () => {
             <TableCell>{t('userAdmin')}</TableCell>
             <TableCell>{t('sharedDisabled')}</TableCell>
             <TableCell>{t('userExpirationTime')}</TableCell>
+            <TableCell>{t('deviceTitle')}</TableCell>
             <TableCell className={classes.columnAction} />
           </TableRow>
         </TableHead>
@@ -112,6 +108,9 @@ const UsersPage = () => {
                 <TableCell>{formatBoolean(item.administrator, t)}</TableCell>
                 <TableCell>{formatBoolean(item.disabled, t)}</TableCell>
                 <TableCell>{formatTime(item.expirationTime, 'date')}</TableCell>
+                <TableCell>
+                  <UserDevicesValue userId={item.id} />
+                </TableCell>
                 <TableCell className={classes.columnAction} padding="none">
                   <CollectionActions
                     itemId={item.id}
@@ -123,11 +122,13 @@ const UsersPage = () => {
                 </TableCell>
               </TableRow>
             ))}
-          {loading && <TableShimmer columns={6} endAction />}
+          {hasMore && (
+            <TableShimmer ref={items.length > 0 ? sentinelRef : null} columns={7} endAction />
+          )}
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={6} align="right">
+            <TableCell colSpan={7} align="right">
               <FormControlLabel
                 control={
                   <Switch
@@ -143,7 +144,6 @@ const UsersPage = () => {
           </TableRow>
         </TableFooter>
       </Table>
-      {hasMore && !loading && <div ref={sentinelRef} />}
       <CollectionFab editPath="/settings/user" />
     </PageLayout>
   );
