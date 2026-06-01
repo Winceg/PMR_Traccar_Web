@@ -45,6 +45,12 @@ const PositionsReportPage = () => {
 
   const readonly = useRestriction('readonly');
   const user = useSelector((state) => state.session.user);
+  const serverAttributes = useSelector((state) => state.session.server.attributes);
+
+  const resolveColumnName = useCallback(
+    (key) => positionAttributes[key]?.name || serverAttributes[`sensorName.${key}`] || key,
+    [positionAttributes, serverAttributes],
+  );
 
   const [available, setAvailable] = useState([]);
   const [columns, setColumns] = useState(DEFAULT_COLUMNS);
@@ -120,7 +126,7 @@ const PositionsReportPage = () => {
           }
         });
         setAvailable(
-          [...keyList, ...keySet].map((key) => [key, positionAttributes[key]?.name || key]),
+          [...keyList, ...keySet].map((key) => [key, resolveColumnName(key)]),
         );
         setItems(data);
 
@@ -213,7 +219,7 @@ const PositionsReportPage = () => {
                 <TableCell className={classes.columnAction} />
                 {columns.map((key) => (
                   <TableCell key={key}>
-                    {positionAttributes[key]?.name || key}
+                    {resolveColumnName(key)}
                     {key === 'fixTime' && (
                       <Tooltip title={reversed ? t('sharedSortAscending') : t('sharedSortDescending')}>
                         <IconButton size="small" onClick={() => setReversed((r) => !r)}>

@@ -237,6 +237,8 @@ const MapPositions = ({
       map.off('click', clusters, onClusterClick);
       map.off('click', onMapClickCallback);
 
+      if (!map.isStyleLoaded()) return;
+
       if (map.getLayer(clusters)) {
         map.removeLayer(clusters);
       }

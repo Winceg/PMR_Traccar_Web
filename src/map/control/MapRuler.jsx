@@ -158,6 +158,7 @@ const MapRuler = ({ positions, onActiveChange }) => {
         onActiveChangeRef.current(false);
       }
       map.removeControl(control);
+      if (!map.isStyleLoaded()) return;
       ['ruler-label', 'ruler-point', 'ruler-line'].forEach((id) => {
         map.removeLayer(id);
       });
