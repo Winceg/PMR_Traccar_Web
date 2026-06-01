@@ -19,4 +19,7 @@ export default [
   'truck',
   'van',
   'scooter',
+  'pump',
+  'sensor',
+  'nacelle',
 ];

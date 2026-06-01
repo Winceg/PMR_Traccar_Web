@@ -656,6 +656,9 @@
     "categoryTruck": "Camion",
     "categoryVan": "Van",
     "categoryScooter": "Scooter",
+    "categoryPump": "Motopompe",
+    "categorySensor": "Capteur de pression",
+    "categoryNacelle": "Nacelle",
     "maintenanceStart": "Départ",
     "maintenancePeriod": "Période"
 }
